@@ -4,3 +4,6 @@ brubeck
 *~
 .DS_Store
 build/*
+debian/brubeck.debhelper.log
+debian/brubeck.substvars
+brubeck_test
