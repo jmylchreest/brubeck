@@ -65,3 +65,6 @@ clean:
 	-rm -f $(OBJECTS) brubeck.o
 	-rm -f $(TEST_OBJ)
 	-rm -f $(TARGET) $(TARGET)_test
+
+deb:
+	gbp buildpackage --git-debian-branch=debian --git-submodules --git-upstream-branch=master

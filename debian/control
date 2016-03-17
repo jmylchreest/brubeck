@@ -1,0 +1,11 @@
+Source: brubeck
+Maintainer: John Mylchreest <john.mylchreest@piksel.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9), libjansson-dev (>= 2.7-1), libmicrohttpd-dev (>= 0.9.37), libssl-dev (>= 1.0.1k)
+
+Package: brubeck
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libjansson4 (>= 2.7-1), libmicrohttpd10 (>= 0.9.37), libssl1.0.0 (>= 1.0.1k), libtasn1-6 (>= 4.2), libnettle4 (>= 2.7.1), libhogweed2 (>= 2.7.1), libgmp10 (>= 2), libffi6 (>= 3.1)
+Description: A Statsd-compatible metrics aggregator
