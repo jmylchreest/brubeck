@@ -5,7 +5,7 @@ CC = gcc
 CXX = g++
 CFLAGS = -g -Wall -O3 -Wno-strict-aliasing -Isrc -Ivendor/ck/include -DNDEBUG=1 -DGIT_SHA=\"$(GIT_SHA)\"
 
-.PHONY: default all clean
+.PHONY: default all clean install
 
 default: $(TARGET)
 all: default
@@ -66,5 +66,9 @@ clean:
 	-rm -f $(TEST_OBJ)
 	-rm -f $(TARGET) $(TARGET)_test
 
-deb:
-	gbp buildpackage --git-debian-branch=debian --git-submodules --git-upstream-branch=master
+install: all
+	mkdir -p /usr/bin/ || exit
+	mkdir -p /etc/brubeck/ || exit
+	chmod 775 ./brubeck || exit
+	cp ./config.default.json.example /etc/brubeck || exit
+	cp ./brubeck /usr/bin/ || exit
