@@ -1,5 +1,9 @@
 brubeck (6318124) UNRELEASED; urgency=medium
 
+  [ John Mylchreest ]
   * Initial release.
+
+  [ John Mylchreest ]
+  * Update to commit 1c81b406168553cbc2ecb74f91f709a7ea8e5aed
 
  -- John Mylchreest <john.mylchreest@piksel.com>  Thu, 17 Mar 2016 13:32:12 +0000
