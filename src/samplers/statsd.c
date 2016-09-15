@@ -13,6 +13,11 @@
 #define MAX_PACKET_SIZE 8192
 
 #ifdef HAVE_RECVMMSG
+
+#ifndef MSG_WAITFORONE
+#	define MSG_WAITFORONE 0x0
+#endif
+
 static void statsd_run_recvmmsg(struct brubeck_statsd *statsd, int sock)
 {
 	const unsigned int SIM_PACKETS = statsd->mmsg_count;
@@ -34,7 +39,7 @@ static void statsd_run_recvmmsg(struct brubeck_statsd *statsd, int sock)
 	log_splunk("sampler=statsd event=worker_online syscall=recvmmsg socket=%d", sock);
 
 	for (;;) {
-		int res = recvmmsg(sock, msgs, SIM_PACKETS, 0, NULL);
+		int res = recvmmsg(sock, msgs, SIM_PACKETS, MSG_WAITFORONE, NULL);
 
 		if (res < 0) {
 			if (errno == EAGAIN || errno == EINTR)
@@ -88,7 +93,7 @@ static void statsd_run_recvmsg(struct brubeck_statsd *statsd, int sock)
 }
 
 static inline char *
-parse_float(char *buffer, value_t *result)
+parse_float(char *buffer, value_t *result, uint8_t *mods)
 {
 	int negative = 0;
 	char *start = buffer;
@@ -97,6 +102,10 @@ parse_float(char *buffer, value_t *result)
 	if (*buffer == '-') {
 		++buffer;
 		negative = 1;
+		*mods |= BRUBECK_MOD_RELATIVE_VALUE;
+	} else if (*buffer == '+') {
+		++buffer;
+		*mods |= BRUBECK_MOD_RELATIVE_VALUE;
 	}
 
 	while (*buffer >= '0' && *buffer <= '9') {
@@ -121,7 +130,7 @@ parse_float(char *buffer, value_t *result)
 	if (negative)
 		value = -value;
 
-	if (unlikely(*buffer == 'e'))
+	if (unlikely(*buffer == 'e' || *buffer == 'E'))
 		value = strtod(start, &buffer);
 
 	*result = value;
@@ -166,7 +175,8 @@ int brubeck_statsd_msg_parse(struct brubeck_statsd_msg *msg, char *buffer, char 
 	 *             ^^^
 	 */
 	{
-		buffer = parse_float(buffer, &msg->value);
+		msg->modifiers = 0;
+		buffer = parse_float(buffer, &msg->value, &msg->modifiers);
 
 		if (*buffer != '|')
 			return -1;
@@ -211,8 +221,9 @@ int brubeck_statsd_msg_parse(struct brubeck_statsd_msg *msg, char *buffer, char 
 	{
 		if (buffer[0] == '|' && buffer[1] == '@') {
 			double sample_rate;
+			uint8_t dummy;
 
-			buffer = parse_float(buffer + 2, &sample_rate);
+			buffer = parse_float(buffer + 2, &sample_rate, &dummy);
 			if (sample_rate <= 0.0 || sample_rate > 1.0)
 				return -1;
 
@@ -246,7 +257,7 @@ void brubeck_statsd_packet_parse(struct brubeck_server *server, char *buffer, ch
 			brubeck_stats_inc(server, metrics);
 			metric = brubeck_metric_find(server, msg.key, msg.key_len, msg.type);
 			if (metric != NULL)
-				brubeck_metric_record(metric, msg.value, msg.sample_freq);
+				brubeck_metric_record(metric, msg.value, msg.sample_freq, msg.modifiers);
 		}
 
 		/* move buf past this stat */
