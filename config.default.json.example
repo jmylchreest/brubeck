@@ -32,5 +32,15 @@
 	  "hmac_key" : "750c783e6ab0b503eaa86e310a5db738",
 	  "replay_len" : 8000
     }
-  ]
+  ],
+
+  "aggregations": {
+    "sum_enabled": true,
+    "min_enabled": true,
+    "max_enabled": true,
+    "mean_enabled": true,
+    "median_enabled": false,
+    "count_enabled": true,
+    "percentiles_enabled": false
+  }
 }

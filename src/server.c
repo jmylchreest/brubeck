@@ -99,6 +99,32 @@ dump_all_metrics(struct brubeck_server *server)
 	fclose(dump);
 }
 
+static void load_aggregations(struct brubeck_server *server, json_t *aggregations)
+{
+  struct brubeck_server_aggregation *aggregation = NULL;
+
+  // Read in aggregations json if defined
+  aggregation                      = xcalloc(1, sizeof(struct brubeck_server_aggregation));
+  aggregation->sum_enabled         = json_boolean_value(json_object_get(aggregations, "sum_enabled"));
+  aggregation->min_enabled         = json_boolean_value(json_object_get(aggregations, "min_enabled"));
+  aggregation->max_enabled         = json_boolean_value(json_object_get(aggregations, "max_enabled"));
+  aggregation->mean_enabled        = json_boolean_value(json_object_get(aggregations, "mean_enabled"));
+  aggregation->median_enabled      = json_boolean_value(json_object_get(aggregations, "median_enabled"));;
+  aggregation->count_enabled       = json_boolean_value(json_object_get(aggregations, "count_enabled"));
+  aggregation->percentiles_enabled = json_boolean_value(json_object_get(aggregations, "percentiles_enabled"));
+
+  // default all to true
+  if (!json_object_get(aggregations, "sum_enabled")) { aggregation->sum_enabled = true; }
+  if (!json_object_get(aggregations, "min_enabled")) { aggregation->min_enabled = true; }
+  if (!json_object_get(aggregations, "max_enabled")) { aggregation->max_enabled = true; }
+  if (!json_object_get(aggregations, "mean_enabled")) { aggregation->mean_enabled = true; }
+  if (!json_object_get(aggregations, "median_enabled")) { aggregation->median_enabled = true; }
+  if (!json_object_get(aggregations, "count_enabled")) { aggregation->count_enabled = true; }
+  if (!json_object_get(aggregations, "percentiles_enabled")) { aggregation->percentiles_enabled = true; }
+
+  server->aggregation              = *aggregation;
+}
+
 static void load_backends(struct brubeck_server *server, json_t *backends)
 {
 	size_t idx;
@@ -110,7 +136,7 @@ static void load_backends(struct brubeck_server *server, json_t *backends)
 
 		if (type && !strcmp(type, "carbon")) {
 			backend = brubeck_carbon_new(server, b, server->active_backends);
-			server->backends[server->active_backends++] = backend; 
+			server->backends[server->active_backends++] = backend;
 		} else {
 			log_splunk("backend=%s event=invalid_backend", type);
 		}
@@ -189,7 +215,7 @@ static void load_config(struct brubeck_server *server, const char *path)
 
 	/* required */
 	int capacity;
-	json_t *backends, *samplers;
+	json_t *backends, *samplers, *aggregations;
 
 	/* optional */
 	int expire = 0;
@@ -205,14 +231,15 @@ static void load_config(struct brubeck_server *server, const char *path)
 	}
 
 	json_unpack_or_die(server->config,
-		"{s?:s, s:s, s:i, s:o, s:o, s?:s, s?:i}",
+		"{s?:s, s:s, s:i, s:o, s:o, s?:s, s?:i, s?:o}",
 		"server_name", &server->name,
 		"dumpfile", &server->dump_path,
 		"capacity", &capacity,
 		"backends", &backends,
 		"samplers", &samplers,
 		"http", &http,
-		"expire", &expire);
+		"expire", &expire,
+    "aggregations", &aggregations);
 
 	gh_log_set_instance(server->name);
 
@@ -222,6 +249,7 @@ static void load_config(struct brubeck_server *server, const char *path)
 
 	load_backends(server, backends);
 	load_samplers(server, samplers);
+  load_aggregations(server, aggregations);
 
 	if (http) brubeck_http_endpoint_init(server, http);
 	if (expire) server->fd_expire = load_timerfd(expire);
@@ -334,4 +362,3 @@ int brubeck_server_run(struct brubeck_server *server)
 	log_splunk("event=shutdown");
 	return 0;
 }
-

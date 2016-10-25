@@ -17,6 +17,16 @@ struct brubeck_internal_stats {
 	} live, sample;
 };
 
+struct brubeck_server_aggregation {
+  bool sum_enabled;
+  bool min_enabled;
+  bool max_enabled;
+  bool mean_enabled;
+  bool median_enabled;
+  bool count_enabled;
+  bool percentiles_enabled;
+};
+
 // Server
 struct brubeck_server {
 	const char *name;
@@ -40,6 +50,8 @@ struct brubeck_server {
 
 	json_t *config;
 	struct brubeck_internal_stats internal_stats;
+
+  struct brubeck_server_aggregation aggregation;
 };
 
 #define brubeck_stats_inc(server, STAT) brubeck_atomic_inc(&server->internal_stats.live.STAT)
